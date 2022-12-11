@@ -4,7 +4,7 @@ import sqlite3
 class SQLiteClient:
     def __init__(self, filepath: str):
         self.filepath = filepath
-        self.connect = None
+        self.connection = None
 
     def create_connection(self):
         self.connection = sqlite3.connect(

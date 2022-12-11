@@ -26,11 +26,11 @@ class Reminder:
     ):
         self.telegram_client = telegram_client
         self.database_client = database_client
-        self.setted_up = False
+        self.set_up = False
 
     def setup(self):
         self.database_client.create_connection()
-        self.setted_up = True
+        self.set_up = True
 
     def shutdown(self):
         self.database_client.close_connection()
@@ -52,21 +52,7 @@ class Reminder:
             ])
 
     def __call__(self, *args, **kwargs):
-        if not self.setted_up:
+        if not self.set_up:
             logger.error("Resources in worker has not been set up!")
             return
         self.execute()
-
-
-if __name__ == "__main__":
-    database_client = SQLiteClient("/home/dimaska/Dev/reminderBot/users.db")
-    telegram_client = TelegramClient(
-        token=TOKEN,
-        base_url="https://api.telegram.org/"
-    )
-    reminder = Reminder(
-        database_client=database_client,
-        telegram_client=telegram_client
-    )
-    reminder.setup()
-    reminder()

@@ -16,6 +16,7 @@ logger.addHandler(StreamHandler())
 logger.setLevel("INFO")
 
 env = Env()
+
 CHAT_ID = env.int("CHAT_ID")
 TOKEN = env.str("TOKEN")
 
@@ -44,7 +45,7 @@ class LoggerBot(telebot.TeleBot):
 
 telegram_client = TelegramClient(
     token=TOKEN,
-    base_url="https://api.telegram.org/"
+    base_url="https://api.telegram.org"
 )
 user_manager = UserManager(SQLiteClient("users.db"))
 bot = LoggerBot(
@@ -76,7 +77,7 @@ def start(message: Message):
     )
 
 
-def handle_standup_speech(message: Message):
+def handle_answer(message: Message):
     bot.user_manager.update_date(
         user_id=str(message.from_user.id),
         updated_date=date.today()
@@ -90,12 +91,11 @@ def handle_standup_speech(message: Message):
                                "и хорошего дня!")
 
 
-@bot.message_handler(commands=["say_standup_speech"])
-def say_standup_speech(message: Message):
-    bot.reply_to(message, text="Привет! Чем ты занимался вчера? "
-                               "Что будешь делать сегодня? "
-                               "Какие есть трудности?")
-    bot.register_next_step_handler(message, handle_standup_speech)
+@bot.message_handler(commands=["report"])
+def report(message: Message):
+    bot.reply_to(message, text="Привет! Всё прошло по плану? "
+                               "Какие были проблемы?")
+    bot.register_next_step_handler(message, handle_answer)
 
 
 def create_error_message(error: Exception) -> str:
