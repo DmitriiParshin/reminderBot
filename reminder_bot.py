@@ -1,12 +1,19 @@
-import json
-from datetime import datetime
+from datetime import datetime, date
+from logging import getLogger, StreamHandler
+
 from envparse import Env
 
 import telebot
 from telebot.types import Message
 
-from create_db import UserManager, SQLiteClient
+from create_db import SQLiteClient
+from manager import UserManager
 from telegram_client import TelegramClient
+
+
+logger = getLogger(__name__)
+logger.addHandler(StreamHandler())
+logger.setLevel("INFO")
 
 env = Env()
 CHAT_ID = env.int("CHAT_ID")
@@ -28,6 +35,12 @@ class LoggerBot(telebot.TeleBot):
     def setup_resources(self):
         self.user_manager.setup()
 
+    def shutdown_resources(self):
+        self.user_manager.shutdown()
+
+    def shutdown(self):
+        self.shutdown_resources()
+
 
 telegram_client = TelegramClient(
     token=TOKEN,
@@ -39,7 +52,6 @@ bot = LoggerBot(
     telegram_client=telegram_client,
     user_manager=user_manager
 )
-bot.setup_resources()
 
 
 @bot.message_handler(commands=["start"])
@@ -65,6 +77,15 @@ def start(message: Message):
 
 
 def handle_standup_speech(message: Message):
+    bot.user_manager.update_date(
+        user_id=str(message.from_user.id),
+        updated_date=date.today()
+    )
+    bot.send_message(
+        chat_id=CHAT_ID,
+        text=f"Пользователь {message.from_user.username} "
+             f"говорит {message.text}"
+    )
     bot.reply_to(message, text="Спасибо большое! Желаю успехов "
                                "и хорошего дня!")
 
@@ -83,10 +104,13 @@ def create_error_message(error: Exception) -> str:
 
 while True:
     try:
+        bot.setup_resources()
         bot.polling()
     except Exception as error:
+        error_message = create_error_message(error)
         bot.telegram_client.post(
             method="sendMessage",
-            params={"text": create_error_message(error),
-                    "chat_id": CHAT_ID}
+            params={"text": error_message, "chat_id": CHAT_ID}
         )
+        logger.error(error_message)
+        bot.shutdown()
